@@ -1,8 +1,15 @@
 import json
 
+
 class ConversationHistory:
     def __init__(self):
         self.conversationContainer = []
+
+    def newConversation(self):
+        conversation = dict.fromkeys(["source", "target", "duration", "status", "messages-sent",
+                                     "messages-sent-by-source", "messages-sent-by-target", "breaks",
+                                     "breaks-taken-by-source", "breaks-taken-by-target"])
+        return conversation
 
     def readConversationHistory(self):
         print(self.conversationContainer)
@@ -24,6 +31,7 @@ class ConversationHistory:
     def printJSON(self):
         print(json.dumps(self.conversationContainer, indent=4))
 
+
 if __name__ == '__main__':
     convHis = ConversationHistory()
     conversation = {
@@ -37,7 +45,7 @@ if __name__ == '__main__':
         "breaks": 0,
         "breaks-taken-by-source": 0,
         "breaks-taken-by-target": 0
-        }
+    }
     conversationSub = {
         "source": "192.168.0.4",
         "target": "192.168.0.1",
