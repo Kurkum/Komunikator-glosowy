@@ -34,9 +34,19 @@ def sample_conversation(x):
     conversation["duration"] = formatted_time
     conversationHistoryController.addConversation(conversation)
 
+def background_ongoing_task(time_to_sleep):
+    while(True):
+        time.sleep(time_to_sleep)
+        conversationHistoryController.readConversationHistory()
+
 if __name__ == "__main__":
+    background_task = threading.Thread(target=background_ongoing_task, args=(3,))
+    background_task.start()
     threadVar = threading.Thread(target=sample_conversation, args=(100000,))
     threadVar.start()
-    threadVar.join()
-    conversationHistoryController.readConversationHistory()
+    threadVar_1 = threading.Thread(target=sample_conversation, args=(200000,))
+    threadVar_1.start()
+    threadVar_2 = threading.Thread(target=sample_conversation, args=(300000,))
+    threadVar_2.start()
+
 
