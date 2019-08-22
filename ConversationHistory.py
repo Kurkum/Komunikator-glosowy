@@ -6,7 +6,7 @@ class ConversationHistory:
         self.conversationContainer = []
 
     def newConversation(self):
-        conversation = dict.fromkeys(["source", "target", "duration", "status", "messages-sent",
+        conversation = dict.fromkeys(["id", "source", "target", "duration", "status", "messages-sent",
                                      "messages-sent-by-source", "messages-sent-by-target", "breaks",
                                      "breaks-taken-by-source", "breaks-taken-by-target"])
         return conversation
@@ -31,10 +31,25 @@ class ConversationHistory:
     def printJSON(self):
         print(json.dumps(self.conversationContainer, indent=4))
 
+    def saveConversationHistoryToFile(self):
+        file = open("conversation_history.json", "w")
+        file.write(self.getJSON())
+        file.close()
+
+    def readConversationHistoryFromFile(self):
+        file = open("conversation_history.json", "r")
+        return file.read()
+
+    def prettifyConversation(self, conversation):
+        output = ""
+        for key, value in conversation.items():
+            output += str(key) + " - " + str(value) + "\n"
+        return output
 
 if __name__ == '__main__':
     convHis = ConversationHistory()
     conversation = {
+        "id": 1,
         "source": "192.168.0.1",
         "target": "192.168.0.2",
         "duration": "00:23:47:09",
@@ -47,6 +62,7 @@ if __name__ == '__main__':
         "breaks-taken-by-target": 0
     }
     conversationSub = {
+        "id": 2,
         "source": "192.168.0.4",
         "target": "192.168.0.1",
         "duration": "00:13:47:09",
