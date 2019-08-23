@@ -1,6 +1,8 @@
 import tkinter
 import socket
 import ast
+import random
+from threading import Thread
 
 from ConversationHistory import ConversationHistory
 from ConnectionHandler import ConnectionHandler
@@ -17,7 +19,8 @@ class GUI(tkinter.Tk):
         main_window.pack()
 
         self.conversationHistory = ConversationHistory()
-        self.connectionHandler = ConnectionHandler('localhost', 12345)
+        self.connectionHandler = ConnectionHandler('169.254.199.114', random.randint(20000, 20100))
+
         self.shared_data = {
             "host": ""
         }
@@ -65,13 +68,13 @@ class IPSearchFrame(tkinter.Frame):
 
     def ip_search_callback(self, field):
         ip_search_entry_get = field.get()
+        ip, port = ip_search_entry_get.split(":")
+        print(ip, port)
         try:
-            ip_search_result = socket.gethostbyaddr(ip_search_entry_get)
-            if (ip_search_result):
-                print('Klient odnaleziony')
-                self.controller.shared_data["host"] = ip_search_entry_get
-                self.controller.show_frame("ConversationFrame")
-
+            self.controller.connectionHandler.connect(ip, int(port))
+            print('Klient odnaleziony')
+            self.controller.shared_data["host"] = ip_search_entry_get
+            self.controller.show_frame("ConversationFrame")
         except Exception as ip_search_exception:
             messagebox.showinfo('Blad', 'Nie znaleziono podanego klienta')
             return 0
