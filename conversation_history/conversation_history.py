@@ -3,7 +3,9 @@ import json
 
 class ConversationHistory:
     def __init__(self):
-        self.conversationContainer = []
+        with open("../conversation_history.json") as json_file:
+            self.conversationContainer = json.load(json_file)
+        print(self.conversationContainer)
 
     def newConversation(self):
         conversation = dict.fromkeys(["id", "source", "target", "duration", "status", "messages-sent",
@@ -26,19 +28,28 @@ class ConversationHistory:
         self.conversationContainer = []
 
     def getJSON(self):
-        return json.dumps(self.conversationContainer)
+        temp = self.conversationContainer
+        for conversation in temp:
+            for key in conversation:
+                if conversation[key] is None:
+                    conversation[key] = "None"
+        return json.dumps(temp)
 
     def printJSON(self):
         print(json.dumps(self.conversationContainer, indent=4))
 
     def saveConversationHistoryToFile(self):
-        file = open("conversation_history.json", "w")
+        # TODO: Handle appending to existing conv hist
+        file = open("../conversation_history.json", "w")
+        file.truncate()
         file.write(self.getJSON())
         file.close()
 
     def readConversationHistoryFromFile(self):
-        file = open("conversation_history.json", "r")
-        return file.read()
+        file = open("../conversation_history.json", "r")
+        content = file.read()
+        file.close()
+        return content
 
     def prettifyConversation(self, conversation):
         output = ""
@@ -49,7 +60,6 @@ class ConversationHistory:
 if __name__ == '__main__':
     convHis = ConversationHistory()
     conversation = {
-        "id": 1,
         "source": "192.168.0.1",
         "target": "192.168.0.2",
         "duration": "00:23:47:09",
@@ -62,7 +72,6 @@ if __name__ == '__main__':
         "breaks-taken-by-target": 0
     }
     conversationSub = {
-        "id": 2,
         "source": "192.168.0.4",
         "target": "192.168.0.1",
         "duration": "00:13:47:09",

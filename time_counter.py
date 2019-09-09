@@ -1,9 +1,8 @@
-import logging
 import threading
 import time
 import functools
-import datetime
-import ConversationHistory as ch
+from conversation_history import conversation_history as ch
+
 
 # decorator is a cool way of timing the ongoing task, however you can't read global variables in it
 # is there any other way of adding that time to time_history? i suppose not
