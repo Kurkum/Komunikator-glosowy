@@ -18,8 +18,20 @@ class SettingsFrame(tk.Frame):
                                           background='#b2bec3')
         modulation_check.pack()
 
+        self.modulation_scale = tk.Scale(self, orient="horizontal", background="#b2bec3", from_=-5, to=5)
+        self.modulation_scale.pack()
+
+        modulation_button = tk.Button(self, text="Ustaw", background="#b2bec3", command=self.set_modulation_value)
+        modulation_button.pack()
+
+        self.modulation_label = tk.Label(self, text="", background="#b2bec3")
+        self.modulation_label.pack()
 
         self.bind("<<ShowFrame>>", self.on_show)
 
     def on_show(self, event):
         pass
+
+    def set_modulation_value(self):
+        self.controller.shared_data["modulation_value"] = self.modulation_scale.get()
+        self.modulation_label.configure(text="Wartosc modulacji: {}".format(self.modulation_scale.get()))

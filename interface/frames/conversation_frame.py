@@ -254,7 +254,7 @@ class ConversationFrame(tk.Frame):
         self.flags["conversation_timer_running_flag"] = True
         self.flags["conversation_timer_working_flag"] = True
         if self.controller.modulation_var.get():
-            self.modulation_label.configure(text="Modulacja jest aktywna")
+            self.modulation_label.configure(text="Modulacja jest aktywna - wartosc: {}".format(self.controller.shared_data["modulation_value"]))
 
         else:
             self.modulation_label.configure(text="Modulacja nie jest aktywna")
