@@ -1,6 +1,7 @@
 import tkinter as tk
 import socket
 import random
+import threading
 
 from interface.frames.ip_search_frame import IPSearchFrame
 from interface.frames.waiting_frame import WaitingFrame
@@ -10,6 +11,8 @@ from interface.frames.settings_frame import SettingsFrame
 
 from conversation_history.conversation_history import ConversationHistory
 from connection_handler.connection_handler import ConnectionHandler
+
+from tkinter import messagebox
 
 
 class GUI(tk.Tk):
@@ -23,10 +26,17 @@ class GUI(tk.Tk):
         self["bg"] = '#b2bec3'
 
         self.conversationHistory = ConversationHistory()
-        self.connectionHandler = ConnectionHandler('169.254.199.114', random.randint(20000, 20100))
 
         self.shared_data = {
-            "host": ""
+            "host_ip": "",
+            "host_port": "",
+            "modulation_value": 0,
+            "waiting_frame": {
+                "not_accepted_flag": False,
+                "stop_timer_flag": False
+            },
+            "who_called": "",
+            "cycle_ender": 0
         }
 
         self.frame_objects_list = (
@@ -34,7 +44,8 @@ class GUI(tk.Tk):
             WaitingFrame,
             ConversationFrame,
             ConversationHistoryFrame,
-            SettingsFrame
+            SettingsFrame,
+            ConnectionHandler
         )
 
         self.frame_objects_container = {}
@@ -55,6 +66,12 @@ class GUI(tk.Tk):
         self.frame_objects_container["IPSearchFrame"].event_generate("<<ShowFrame>>")
         self.frame_objects_container["IPSearchFrame"].tkraise()
 
+    def get_current_conversation(self):
+        return self.frame_objects_container["ConversationFrame"].get_current_conversation()
+
+    def new_cycle(self):
+        return True if self.shared_data["cycle_ender"]  == "new_cycle" else False
+
     def show_frame(self, frame_object_name):
         frame_object = self.frame_objects_container[frame_object_name]
         frame_object.event_generate("<<ShowFrame>>")
@@ -62,6 +79,9 @@ class GUI(tk.Tk):
 
     def on_closing(self):
         if tk.messagebox.askokcancel("Zakończ", "Czy na pewno chcesz wyjść z programu?"):
+            self.frame_objects_container["ConnectionHandler"].thread_stopper["listener"] = True
+            self.frame_objects_container["ConnectionHandler"].thread_stopper["clienter"] = True
+            self.frame_objects_container["ConnectionHandler"].serv.close()
             self.conversationHistory.saveConversationHistoryToFile()
             self.destroy()
 

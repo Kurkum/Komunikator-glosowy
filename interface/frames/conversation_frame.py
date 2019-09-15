@@ -59,14 +59,20 @@ class ConversationFrame(tk.Frame):
 
     def set_caller(self):
         self.who_talks_label.pack()
-        self.who_talks_label.configure(text="Nadawca")
+        if self.controller.shared_data["who_called"] == "me":
+            self.who_talks_label.configure(text="Nadawca (ja)")
+        else:
+            self.who_talks_label.configure(text="Nadawca")
         self.controller["bg"] = '#00b894'
         # self.flags["who_talks_flag"] = not self.flags["who_talks_flag"]
         self.flags["who_talks_flag"] = "caller"
 
     def set_receiver(self):
         self.who_talks_label.pack()
-        self.who_talks_label.configure(text="Odbierający")
+        if self.controller.shared_data["who_called"] == "you":
+            self.who_talks_label.configure(text="Odbierający (ja)")
+        else:
+            self.who_talks_label.configure(text="Odbierający")
         self.controller["bg"] = '#e17055'
         # self.flags["who_talks_flag"] = not self.flags["who_talks_flag"]
         self.flags["who_talks_flag"] = "receiver"
@@ -87,7 +93,9 @@ class ConversationFrame(tk.Frame):
             # If it's not stopped
             if self.flags["conversation_timer_running_flag"]:
                 # Decide whose time it is to talk
-                if self.conversation_timer_after_cycle():
+                if self.controller.new_cycle():
+                    print(self.flags["who_talks_flag"])
+                    self.controller.shared_data["cycle_ender"] = "cycle_ended"
                     if self.flags["who_talks_flag"] == "receiver":
 
                         if self.conversation["messages-sent"] is None:
@@ -125,11 +133,11 @@ class ConversationFrame(tk.Frame):
                                                   self.conversation_timer_info[1],
                                                   self.conversation_timer_info[2])
                 return time_string
-            else:
-                time_string = self.pattern.format(self.conversation_timer_info[0],
-                                                  self.conversation_timer_info[1],
-                                                  self.conversation_timer_info[2])
-                return time_string
+        else:
+            time_string = self.pattern.format(self.conversation_timer_info[0],
+                                              self.conversation_timer_info[1],
+                                              self.conversation_timer_info[2])
+            return time_string
 
     # Handle conversation timer
     def set_conversation_timer(self):
@@ -253,9 +261,8 @@ class ConversationFrame(tk.Frame):
         self.flags["pause_timer_flag"] = False
         self.flags["conversation_timer_running_flag"] = True
         self.flags["conversation_timer_working_flag"] = True
-        if self.controller.modulation_var.get():
+        if self.controller.shared_data["modulation_value"] != 0:
             self.modulation_label.configure(text="Modulacja jest aktywna - wartosc: {}".format(self.controller.shared_data["modulation_value"]))
-
         else:
             self.modulation_label.configure(text="Modulacja nie jest aktywna")
 
@@ -264,9 +271,12 @@ class ConversationFrame(tk.Frame):
         #
 
         self.flags["who_talks_flag"] = "receiver"
-        self.receiver_label.configure(text=self.controller.shared_data["host"])
+        self.receiver_label.configure(text=self.controller.shared_data["host_ip"])
         self.receiver_label.pack(side="top")
         self.conversation = self.new_conversation()
         self.conversation["status"] = "in progress"
         self.conversation_timer.pack()
         self.set_conversation_timer()
+
+    def get_current_conversation(self):
+        return self.conversation

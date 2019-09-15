@@ -36,7 +36,7 @@ class WaitingFrame(tk.Frame):
 
     # Sets stop_timer_flag and restarts the timer
     def stop_timer(self):
-        self.flags["stop_timer_flag"] = True
+        self.controller.shared_data["waiting_frame"]["stop_timer_flag"] = True
         self.restart_timer()
         self.timer.pack_forget()
 
@@ -52,23 +52,28 @@ class WaitingFrame(tk.Frame):
 
     # Run in case user refuses to connect
     def show_not_accepted_message(self):
-        if self.flags["not_accepted_flag"]:
+        if self.controller.shared_data["waiting_frame"]["not_accepted_flag"]:
             tk.messagebox.showinfo('Blad', 'Odbiorca nie zaakceptowal polaczenia')
             self.return_to_main_frame()
 
     # Runs timer
     def refresh_timer(self, number):
         # If timer still has > seconds left decrement the number and continue counting
-        if number != -1 and not self.flags["stop_timer_flag"]:
+        if number != -1 \
+                and not self.controller.shared_data["waiting_frame"]["stop_timer_flag"] \
+                and not self.controller.shared_data["waiting_frame"]["not_accepted_flag"]:
             self.timer.configure(text=number)
             self.timer.after(1000, self.refresh_timer, number-1)
         # If timer was stopped by another function (ie. user accepted connection) - stop counting
-        elif self.flags["stop_timer_flag"]:
+        elif self.controller.shared_data["waiting_frame"]["stop_timer_flag"]:
+            self.stop_timer()
             return
         # That means timer has run out of time, show not accepted message and set flag
+        elif self.controller.shared_data["waiting_frame"]["not_accepted_flag"]:
+            self.after(10, self.show_not_accepted_message)
         else:
-            self.flags["not_accepted_flag"] = True
-            self.after(1000, self.show_not_accepted_message)
+            self.controller.shared_data["waiting_frame"]["not_accepted_flag"] = True
+            self.after(10, self.show_not_accepted_message)
 
     # Run when displaying frame
     def on_show(self, event):
@@ -76,20 +81,20 @@ class WaitingFrame(tk.Frame):
         try:
             # Refresh receiver label containing IP address of receiver
             self.receiver_label.pack_forget()
-            receiver_label_text = "Oczekiwanie na {}".format(self.controller.shared_data["host"])
+            receiver_label_text = "Oczekiwanie na {}".format(self.controller.shared_data["host_ip"])
             self.receiver_label.configure(text=receiver_label_text)
             self.receiver_label.pack(side="top")
 
             # Set flags
-            self.flags["not_accepted_flag"] = False
-            self.flags["stop_timer_flag"] = False
+            self.controller.shared_data["waiting_frame"]["not_accepted_flag"] = False
+            self.controller.shared_data["waiting_frame"]["stop_timer_flag"] = False
 
             # Pack and run timer
             self.timer.pack()
             self.timer.after(0, self.refresh_timer, 30)
         except AttributeError:
             # Display receiver label
-            receiver_label_text = "Oczekiwanie na {}".format(self.controller.shared_data["host"])
+            receiver_label_text = "Oczekiwanie na {}".format(self.controller.shared_data["host_ip"])
 
             # Configure and display labels
             self.receiver_label.configure(text=receiver_label_text)
@@ -97,8 +102,8 @@ class WaitingFrame(tk.Frame):
             self.timer.pack()
 
             # Set initial flags to False
-            self.flags["not_accepted_flag"] = False
-            self.flags["stop_timer_flag"] = False
+            self.controller.shared_data["waiting_frame"]["not_accepted_flag"] = False
+            self.controller.shared_data["waiting_frame"]["stop_timer_flag"] = False
 
             # Run timer
             self.timer.after(0, self.refresh_timer, 30)

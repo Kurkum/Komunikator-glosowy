@@ -5,7 +5,6 @@ class ConversationHistory:
     def __init__(self):
         with open("../conversation_history.json") as json_file:
             self.conversationContainer = json.load(json_file)
-        print(self.conversationContainer)
 
     def newConversation(self):
         conversation = dict.fromkeys(["id", "source", "target", "duration", "status", "messages-sent",
