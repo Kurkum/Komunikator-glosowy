@@ -53,7 +53,7 @@ class WaitingFrame(tk.Frame):
     # Run in case user refuses to connect
     def show_not_accepted_message(self):
         if self.controller.shared_data["waiting_frame"]["not_accepted_flag"]:
-            tk.messagebox.showinfo('Blad', 'Odbiorca nie zaakceptowal polaczenia')
+            tk.messagebox.showinfo('Tajniacy - błąd', 'Odbiorca nie zaakceptował połączenia.')
             self.return_to_main_frame()
 
     # Runs timer

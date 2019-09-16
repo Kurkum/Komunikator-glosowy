@@ -1,6 +1,8 @@
 import tkinter as tk
 import re
 
+from tkinter import messagebox
+
 
 class IPSearchFrame(tk.Frame):
 
@@ -21,22 +23,21 @@ class IPSearchFrame(tk.Frame):
 
         ip_search_entry = tk.Entry(self, bd=10)
         ip_search_button = tk.Button(self, text="Podejmij próbę kontaktu",
-                                           command=lambda: self.ip_search_callback(ip_search_entry))
+                                     command=lambda: self.ip_search_callback(ip_search_entry))
 
         ip_search_entry.pack()
         ip_search_button.pack()
 
         conversation_history_button = tk.Button(self, text="Pokaż historię połączeń",
-                                                      command=lambda: self.controller.show_frame("ConversationHistoryFrame"))
+                                                command=lambda: self.controller.show_frame("ConversationHistoryFrame"))
         conversation_history_button.pack()
 
         settings_button = tk.Button(self, text="Przejdź do ustawień",
-                                                command=lambda: self.controller.show_frame("SettingsFrame"))
+                                    command=lambda: self.controller.show_frame("SettingsFrame"))
         settings_button.pack()
 
     def ip_search_callback(self, field):
         try:
-
             ip_search_entry_get = field.get()
             ip_regex_str = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
             port_regex_str = "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$"
@@ -45,9 +46,8 @@ class IPSearchFrame(tk.Frame):
                 raise ValueError
             elif not re.search(port_regex_str, port):
                 raise ValueError
-
         except ValueError:
-            tk.messagebox.showinfo('Błąd', "Należy podać poprawny adres IP "
+            tk.messagebox.showinfo('Tajniacy - błąd', "Należy podać poprawny adres IP "
                                             "wraz z portem w formacie: 0.0.0.0:1234")
             return
         try:
@@ -55,5 +55,5 @@ class IPSearchFrame(tk.Frame):
             self.controller.shared_data["host_port"] = port
             self.controller.show_frame("WaitingFrame")
         except Exception as ip_search_exception:
-            tk.messagebox.showinfo('Blad', 'Nie znaleziono podanego klienta')
+            tk.messagebox.showinfo('Tajniacy - błąd', 'Nie znaleziono podanego klienta.')
             return

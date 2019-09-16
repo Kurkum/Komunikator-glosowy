@@ -7,6 +7,14 @@ import wave
 import struct
 
 from random import randint
+from tkinter import messagebox
+
+CHUNK = 1024
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+RATE = 44100
+RECORD_SECONDS = 10
+WIDTH = 2
 
 
 class ConnectionHandler(tk.Frame):
@@ -23,9 +31,12 @@ class ConnectionHandler(tk.Frame):
         self.clienter = threading.Thread(target=self.client_action, args=())
         self.clienter.start()
 
-    def imherre(self):
-        print("im here")
-        print(self.thread_stopper)
+        # vars
+        # self.listener_socket = None
+        # self.listen_port = None
+        self.modulation = None
+
+        self.GLOBAL_IP = self.get_local_ip()
 
     def add_source_and_target_to_conversation(self, source, target):
         actual_conversation = self.controller.get_current_conversation()
@@ -33,13 +44,11 @@ class ConnectionHandler(tk.Frame):
         actual_conversation["target"] = target
 
     def modulate_voice(self, data):
-        swidth = 2
-        data = np.array(wave.struct.unpack("%dh" % (len(data) / swidth), data)) * 2
+        width = 2
+        data = np.array(wave.struct.unpack("%dh" % (len(data) / width), data)) * 2
 
         data = np.fft.rfft(data)
-        # MANipulation
 
-        # This does the shifting
         data2 = [0] * len(data)
         if self.modulation >= 0:
             data2[self.modulation:len(data)] = data[0:(len(data) - self.modulation)]
@@ -52,35 +61,37 @@ class ConnectionHandler(tk.Frame):
 
         data = np.fft.irfft(data)
 
-        dataout = np.array(data * 0.5, dtype='int16')  # undo the *2 that was done at reading
-        chunkout = struct.pack("%dh" % (len(dataout)), *list(dataout))  # convert back to 16-bit data
-        return chunkout
+        data_out = np.array(data * 0.5, dtype='int16')  # undo the *2 that was done at reading
+        chunk_out = struct.pack("%dh" % (len(data_out)), *list(data_out))  # convert back to 16-bit data
+        return chunk_out
 
     def listener_action(self):
         proto = socket.getprotobyname('tcp')
-        self.serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto)
+        self.listener_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto)
         self.listen_port = randint(20000, 21000)
         print("Slucham na porcie {}".format(self.listen_port))
-        self.serv.bind((self.get_local_ip(), self.listen_port))
-        self.serv.listen(1)
+        self.listener_socket.bind((self.get_local_ip(), self.listen_port))
+        self.listener_socket.listen(1)
         try:
             while 1:
                 self.modulation = self.controller.shared_data["modulation_value"]
-                conn, addr = self.serv.accept()
-                message = self.utfToString(str(conn.recv(1024)))
-                tk.messagebox.showinfo("Informacja", "listenAction: Nowa rozmowa typu: {}".format(str(message)))
+                conn, addr = self.listener_socket.accept()
+                message = self.utf_to_str(str(conn.recv(1024)))
+                # tk.messagebox.showinfo("Informacja", "listenAction: Nowa rozmowa typu: {}".format(str(message)))
                 if message == "EXIT":  # komunikat pobudzający, nie oczekuje odpowiedzi
                     conn.close()
                     break
                 elif message == "ROZMOWA":
-                    if self.isBusy():  # jest zajęty
-                        print("listenAction [ Sory, jestem zajęty ]")
+                    if self.is_busy():  # is busy
+                        print("listenAction [ im busy ]")
                         new_message = "NIE ZGODA".encode('utf-8')
                         conn.send(new_message)
                         pass
                     else:
-                        self.iAmBusy()
-                        if tk.messagebox.askokcancel("Nowe polaczenie", "Czy chcesz oderac nadchodzace polaczenie?"):
+                        self.i_am_busy()
+                        if tk.messagebox.askokcancel("Tajniacy {} - akcja".format(self.GLOBAL_IP),
+                                                     "Połączenie przychodzące od {}"
+                                                     "- czy chcesz odebrać?".format(addr[0])):
                             new_message = "ZGODA".encode('utf-8')
                             conn.send(new_message)
                             self.controller.shared_data["who_called"] = "you"
@@ -92,7 +103,7 @@ class ConnectionHandler(tk.Frame):
                             conn.send(new_message)
                 if self.thread_stopper["listener"]:
                     print(self.thread_stopper["listener"])
-                    self.serv.close()
+                    self.listener_socket.close()
                     break
         except OSError:
             print("Closed listener socket")
@@ -100,18 +111,14 @@ class ConnectionHandler(tk.Frame):
     def conversation_listener(self, conn):
         while 1:
             self.controller.shared_data["cycle_ender"] = "new_cycle"
-            message = self.utfToString(str(conn.recv(1024)))
+            message = self.utf_to_str(str(conn.recv(1024)))
             if message == "KONIEC":
                 print("Przeciwnik zażądał zakończenia rozmowy")
+                self.controller.close_conversation_frame()
+                self.i_am_free()
                 break
             elif message == "NIE KONIEC":
                 # ustawienia dla odbierania i wysyłania
-                CHUNK = 1024
-                FORMAT = pyaudio.paInt16
-                CHANNELS = 1
-                RATE = 44100
-                RECORD_SECONDS = 10
-                WIDTH = 2
 
                 # Odbieranie dźwięku
                 p = pyaudio.PyAudio()
@@ -121,14 +128,13 @@ class ConnectionHandler(tk.Frame):
                                 output=True,
                                 frames_per_buffer=CHUNK)
 
-
                 print("Odbieranie dźwięku")
                 frames = []
                 while 1:
                     data = conn.recv(1024)
-                    print(str(data))
-                    if str(data)[len(str(data)) - 2] == "K" and str(data)[len(str(data)) - 3] == "K" and str(data)[
-                        len(str(data)) - 4] == "K":
+                    if str(data)[len(str(data)) - 2] == "K" \
+                            and str(data)[len(str(data)) - 3] == "K" \
+                            and str(data)[len(str(data)) - 4] == "K":
                         print("Znaleziono K")
                         break
                     frames.append(data)
@@ -143,10 +149,13 @@ class ConnectionHandler(tk.Frame):
                 p.terminate()
 
                 # Koniec / nagraj
-                if not tk.messagebox.askokcancel("Akcja", "Co chcesz zrobic? Kontynuuj rozmowe, badz odrzuc"):
+                if not tk.messagebox.askokcancel("Tajniacy {} - akcja".format(self.GLOBAL_IP),
+                                                 "Co chcesz zrobić? Kontynuuj rozmowę (Ok), bądź odrzuć (Anuluj)."):
                     # Komunikat do drugiej strony
                     message = "KONIEC".encode('utf-8')
                     conn.send(message)
+                    self.controller.close_conversation_frame()
+                    self.i_am_free()
                     break
 
                 else:
@@ -158,7 +167,6 @@ class ConnectionHandler(tk.Frame):
                                     rate=RATE,
                                     input=True,
                                     frames_per_buffer=CHUNK)
-
 
                     # Nagrywanie
                     print("Nagrywanie: ")
@@ -199,8 +207,8 @@ class ConnectionHandler(tk.Frame):
             self.modulation = self.controller.shared_data["modulation_value"]
             proto = socket.getprotobyname('tcp')
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto)
-            if self.isFree() and self.controller.shared_data["host_ip"] != "":
-                self.iAmBusy()
+            if self.is_free() and self.controller.shared_data["host_ip"] != "":
+                self.i_am_busy()
                 adres = self.controller.shared_data["host_ip"]
                 port = self.controller.shared_data["host_port"]
                 print("Łączę z adresem: " + str(adres))
@@ -211,7 +219,7 @@ class ConnectionHandler(tk.Frame):
                     message = "ROZMOWA".encode('utf-8')
                     s.send(message)
                     while not self.controller.shared_data["waiting_frame"]["not_accepted_flag"]:
-                        resp = self.utfToString(str(s.recv(1024)))
+                        resp = self.utf_to_str(str(s.recv(1024)))
                         if resp != "":
                             print("A oto odpowiedź: " + resp)
                             break
@@ -230,7 +238,7 @@ class ConnectionHandler(tk.Frame):
                     self.controller.shared_data["waiting_frame"]["not_accepted_flag"] = True
                     print("Ta osoba nie ma teraz czasu na rozmowę!")
                 finally:
-                    self.iAmFree()
+                    self.i_am_free()
                     self.controller.shared_data["host_ip"] = ""
 
             if self.thread_stopper["clienter"]:
@@ -239,23 +247,19 @@ class ConnectionHandler(tk.Frame):
     def conversation_clienter(self, conn):
         while 1:
             print("Co chcesz zrobić: Nagraj wiadomość / Zakończ? [N/Z]")
-            if not tk.messagebox.askokcancel("Akcja", "Czy chcesz nagrac odpowiedz czy zakonczyc konwersacje?"):
+            if not tk.messagebox.askokcancel("Tajniacy {} - akcja".format(self.GLOBAL_IP),
+                                             "Co chcesz zrobić? Kontynuuj rozmowę (Ok), bądź odrzuć (Anuluj)."):
                 # Komunikat do drugiej strony
                 message = "KONIEC".encode('utf-8')
                 conn.send(message)
+                self.controller.close_conversation_frame()
+                self.i_am_free()
                 break
 
             else:
                 self.controller.shared_data["cycle_ender"] = "new_cycle"
 
                 # Ustawienia dla wysyłania i odbierania
-                CHUNK = 1024
-                FORMAT = pyaudio.paInt16
-                CHANNELS = 1
-                RATE = 44100
-                RECORD_SECONDS = 10
-                WIDTH = 2
-
                 # Nagrywanie
                 p = pyaudio.PyAudio()
                 stream = p.open(format=FORMAT,
@@ -292,9 +296,11 @@ class ConnectionHandler(tk.Frame):
                 self.controller.shared_data["cycle_ender"] = "new_cycle"
 
                 # Czekam na komunikat
-                resp = self.utfToString(str(conn.recv(1024)))
+                resp = self.utf_to_str(str(conn.recv(1024)))
                 if resp == "KONIEC":
                     print("Wróg zażądał zakończenia rozmowy")
+                    self.i_am_free()
+                    self.controller.close_conversation_frame()
                     break
 
                 elif resp == "NIE KONIEC":
@@ -311,9 +317,9 @@ class ConnectionHandler(tk.Frame):
                     frames = []
                     while 1:
                         data = conn.recv(1024)
-                        print(str(data))
-                        if str(data)[len(str(data)) - 2] == "K" and str(data)[len(str(data)) - 3] == "K" and str(data)[
-                            len(str(data)) - 4] == "K":
+                        if str(data)[len(str(data)) - 2] == "K"\
+                                and str(data)[len(str(data)) - 3] == "K"\
+                                and str(data)[len(str(data)) - 4] == "K":
                             print("Znaleziono K")
                             break
                         frames.append(data)
@@ -333,7 +339,8 @@ class ConnectionHandler(tk.Frame):
             if self.thread_stopper["clienter"]:
                 break
 
-    def get_local_ip(self):
+    @staticmethod
+    def get_local_ip():
         ip_address_list = socket.gethostbyname_ex(socket.gethostname())[2]
 
         local = "not_found"
@@ -344,18 +351,18 @@ class ConnectionHandler(tk.Frame):
 
         return local
 
-    def iAmBusy(self):
+    def i_am_busy(self):
         self.flags[1] = 1
 
-    def iAmFree(self):
+    def i_am_free(self):
         self.flags[1] = 0
 
-    def isBusy(self):
+    def is_busy(self):
         if self.flags[1] == 0:
             return False
         return True
 
-    def isFree(self):
+    def is_free(self):
         if self.flags[1] == 0:
             return True
         return False
@@ -377,98 +384,8 @@ class ConnectionHandler(tk.Frame):
             finally:
                 test_socket.close()
 
-    def utfToString(self, word):
+    @staticmethod
+    def utf_to_str(word):
         if len(word) > 3:
             word = word[2:len(word) - 1]
         return word
-
-# import socket
-# import asyncore
-#
-# from random import randint
-# from threading import Thread
-# from threading import Event
-# from tkinter import messagebox
-#
-# # Default parameters - IP address of current machine, along with random port from <20000, 21000>
-# HOST = socket.gethostbyname(socket.gethostname())
-# PORT = randint(20000, 21000)
-#
-#
-# class ConnectionHandler(object):
-#     def __init__(self, host=HOST, port=PORT):
-#         """
-#         Initializes ConnectionHandler object. Opens up two initial sockets - listener and connector.
-#         Default listener port is the one given by the init parameters, the connector is set to one number higher than
-#         the former.
-#         :param host:
-#         :param port:
-#         """
-#         self.host = host
-#
-#         self.listener_port = port
-#         self.connector_port = port+1
-#
-#         self.initial_listener_socket = self.open_listening_socket(self.host, self.listener_port)
-#         self.initial_connector_socket = self.open_connecting_socket(self.host, self.connector_port)
-#
-#         self.event_to_kill = Event()
-#
-#         self.initial_listener_thread = Thread(target=self.begin_listening, args=(self.event_to_kill, "lol"))
-#         self.initial_listener_thread.start()
-#
-#     @staticmethod
-#     def open_listening_socket(host, port):
-#         """
-#         Returns socket that will begin listening by default.
-#         :param host:
-#         :param port:
-#         :return: socket
-#         """
-#         listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         listening_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#         listening_socket.bind((host, port))
-#         print('Listener socket open at {}:{}'.format(host, port))
-#         return listening_socket
-#
-#     @staticmethod
-#     def open_connecting_socket(host, port):
-#         connecting_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         connecting_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#         connecting_socket.bind((host, port))
-#         return connecting_socket
-#
-#     def begin_listening(self, stop_event, test):
-#         while not stop_event.is_set():
-#             self.initial_listener_socket.listen(1)
-#             incoming_conn, incoming_addr = self.initial_listener_socket.accept()
-#             print('Connected by', incoming_addr)
-#             incoming_ip, incoming_port = incoming_addr
-#             result = messagebox.askyesno('Info', 'Prosba o polaczenie przez {} - czy chcesz zaakceptowac?'.format(incoming_addr))
-#             print(result)
-#             if result:
-#                 print('Trying to connect to {}:{}'.format(incoming_ip, incoming_port-1))
-#                 self.initial_connector_socket.connect((incoming_ip, incoming_port-1))
-#                 data = incoming_conn.recv(1024)
-#                 data = data.decode('utf-8')
-#                 print(data)
-#             else:
-#                 self.initial_listener_socket.close()
-#
-#     def begin_connect(self, ip, port):
-#         self.event_to_kill.set()
-#         try:
-#             self.initial_connector_socket.connect((ip, port))
-#             self.incoming_listener_socket = self.open_listening_socket(self.host, self.listener_port)
-#             self.incoming_listener_socket.listen(1)
-#             incoming_conn, incoming_addr = self.incoming_listener_socket.accept()
-#             print('Connected by', incoming_addr)
-#
-#         except ConnectionRefusedError as connection_refused_error:
-#             messagebox.showerror('Klient odmowil polaczenia')
-#
-#     def start_connection(self):
-#         try:
-#             self.initial_connector_socket.send(bytes('test', 'utf-8'))
-#         except Exception as error:
-#             print('Nie mozna wyslac wiadomosci')

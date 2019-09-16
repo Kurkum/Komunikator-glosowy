@@ -72,6 +72,9 @@ class GUI(tk.Tk):
     def new_cycle(self):
         return True if self.shared_data["cycle_ender"]  == "new_cycle" else False
 
+    def close_conversation_frame(self):
+        self.frame_objects_container["ConversationFrame"].return_to_main_frame()
+
     def show_frame(self, frame_object_name):
         frame_object = self.frame_objects_container[frame_object_name]
         frame_object.event_generate("<<ShowFrame>>")
@@ -81,7 +84,7 @@ class GUI(tk.Tk):
         if tk.messagebox.askokcancel("Zakończ", "Czy na pewno chcesz wyjść z programu?"):
             self.frame_objects_container["ConnectionHandler"].thread_stopper["listener"] = True
             self.frame_objects_container["ConnectionHandler"].thread_stopper["clienter"] = True
-            self.frame_objects_container["ConnectionHandler"].serv.close()
+            self.frame_objects_container["ConnectionHandler"].listener_socket.close()
             self.conversationHistory.saveConversationHistoryToFile()
             self.destroy()
 
@@ -92,4 +95,3 @@ if __name__ == '__main__':
     interface.title("Tajniacy")
     interface.resizable(1,1)
     interface.mainloop()
-    # print(socket.gethostbyname(socket.gethostname()))

@@ -1,6 +1,8 @@
 import tkinter as tk
 import time
 
+from tkinter import messagebox
+
 # really temporary stuff
 # until sockets come lol
 whoami = "caller"
@@ -243,19 +245,17 @@ class ConversationFrame(tk.Frame):
         print("Send signal about ending connection")
 
     def return_to_main_frame(self):
-        # TODO: Clear everything, pause flags, etc.
-        if tk.messagebox.askokcancel("Zakończ", "Czy na pewno chcesz zakończyć połączenie?"):
-            self.receiver_label.pack_forget()
-            self.kill_conversation_timer()
-            self.kill_pause_timer()
-            self.conversation["duration"] = self.update_conversation_timer(True)
-            self.conversation["status"] = "ended"
-            self.controller.conversationHistory.addConversation(self.conversation)
-            self.conversation_timer_info = [0, 0, 0]
-            self.controller.return_to_main_frame()
-            self.pack_forget()
-        else:
-            return
+        #if tk.messagebox.askokcancel("Zakończ", "Czy na pewno chcesz zakończyć połączenie?"):
+        tk.messagebox.showinfo("Tajniacy - zakończ", "Połączenie zakończone.")
+        self.receiver_label.pack_forget()
+        self.kill_conversation_timer()
+        self.kill_pause_timer()
+        self.conversation["duration"] = self.update_conversation_timer(True)
+        self.conversation["status"] = "ended"
+        self.controller.conversationHistory.addConversation(self.conversation)
+        self.conversation_timer_info = [0, 0, 0]
+        self.controller.return_to_main_frame()
+        self.pack_forget()
 
     def on_show(self, event):
         self.flags["pause_timer_flag"] = False
