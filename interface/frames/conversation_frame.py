@@ -23,6 +23,9 @@ class ConversationFrame(tk.Frame):
         # Bind ShowFrame event to on_show function
         self.bind("<<ShowFrame>>", self.on_show)
 
+        self.title = tk.Label(self, background="#b2bec3", text="Trwa rozmowa...")
+        self.title.pack()
+
         # Receiver label
         self.receiver_label = tk.Label(self, background="#b2bec3", text="")
 
@@ -31,16 +34,13 @@ class ConversationFrame(tk.Frame):
         self.modulation_label.pack()
 
         # Return button
-        return_button = tk.Button(self, text="Zakończ połączenie i wróć do strony głównej", command=self.return_to_main_frame)
-        return_button.pack(side="bottom")
+        # return_button = tk.Button(self, text="Zakończ połączenie i wróć do strony głównej", command=self.return_to_main_frame)
+        # return_button.pack(side="bottom")
 
         # End conversation button
 
-        end_conversation_button = tk.Button(self, text="Wyślij prośbę o zakończenie połączenia", command=self.end_conversation_properly)
-        end_conversation_button.pack(side="bottom")
-
-        self.pause_information_label = tk.Label(self, text="", background='#b2bec3')
-        self.pause_information_label.pack(side="bottom")
+        # self.pause_information_label = tk.Label(self, text="", background='#b2bec3')
+        # self.pause_information_label.pack(side="bottom")
 
         # Timer that holds conversation time
         self.conversation_timer = tk.Label(self, background="#b2bec3", text="")
@@ -53,8 +53,23 @@ class ConversationFrame(tk.Frame):
         self.who_talks_label = tk.Label(self, background="#b2bec3", text="")
 
         # Ask for pause
-        pause_button = tk.Button(self, text="Poproś o więcej czasu", command=lambda: self.ask_for_pause())
-        pause_button.pack(side="bottom")
+        # pause_button = tk.Button(self, text="Poproś o więcej czasu", command=lambda: self.ask_for_pause())
+        # pause_button.pack(side="bottom")
+
+        self.modulation_scale = tk.Scale(self, orient="horizontal", background="#b2bec3", from_=-5, to=5)
+        self.modulation_scale.set(self.controller.shared_data["modulation_value"])
+
+        modulation_button = tk.Button(self, text="Ustaw", background="#b2bec3", command=self.set_modulation_value)
+
+        self.modulation_label = tk.Label(self, text="Wartosc modulacji: {}".format(self.modulation_scale.get()), background="#b2bec3")
+
+        self.modulation_label.pack(side="bottom")
+        modulation_button.pack(side="bottom")
+        self.modulation_scale.pack(side="bottom")
+
+    def set_modulation_value(self):
+        self.controller.shared_data["modulation_value"] = self.modulation_scale.get()
+        self.modulation_label.configure(text="Wartosc modulacji: {}".format(self.modulation_scale.get()))
 
     def new_conversation(self):
         return self.controller.conversationHistory.newConversation()
@@ -89,6 +104,27 @@ class ConversationFrame(tk.Frame):
         else:
             return False
 
+    def update_messages_sent(self):
+        if self.conversation["messages-sent"] is None:
+            self.conversation["messages-sent"] = 0
+            self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
+        else:
+            self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
+
+    def update_messages_sent_by_source(self):
+        if self.conversation["messages-sent-by-source"] is None:
+            self.conversation["messages-sent-by-source"] = 0
+            self.conversation["messages-sent-by-source"] = self.conversation["messages-sent-by-source"] + 1
+        else:
+            self.conversation["messages-sent-by-source"] = self.conversation["messages-sent-by-source"] + 1
+
+    def update_messages_sent_by_target(self):
+        if self.conversation["messages-sent-by-target"] is None:
+            self.conversation["messages-sent-by-target"] = 0
+            self.conversation["messages-sent-by-target"] = self.conversation["messages-sent-by-target"] + 1
+        else:
+            self.conversation["messages-sent-by-target"] = self.conversation["messages-sent-by-target"] + 1
+
     # Handle conversation timer
     def update_conversation_timer(self, is_ended=False):
         if not is_ended:
@@ -96,24 +132,25 @@ class ConversationFrame(tk.Frame):
             if self.flags["conversation_timer_running_flag"]:
                 # Decide whose time it is to talk
                 if self.controller.new_cycle():
-                    print(self.flags["who_talks_flag"])
                     self.controller.shared_data["cycle_ender"] = "cycle_ended"
+
+
                     if self.flags["who_talks_flag"] == "receiver":
 
-                        if self.conversation["messages-sent"] is None:
-                            self.conversation["messages-sent"] = 0
-                            self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
-                        else:
-                            self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
+                        # if self.conversation["messages-sent"] is None:
+                        #     self.conversation["messages-sent"] = 0
+                        #     self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
+                        # else:
+                        #     self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
 
                         self.set_caller()
                     else:
 
-                        if self.conversation["messages-sent"] is None:
-                            self.conversation["messages-sent"] = 0
-                            self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
-                        else:
-                            self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
+                        # if self.conversation["messages-sent"] is None:
+                        #     self.conversation["messages-sent"] = 0
+                        #     self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
+                        # else:
+                        #     self.conversation["messages-sent"] = self.conversation["messages-sent"] + 1
 
                         self.set_receiver()
 
@@ -192,60 +229,10 @@ class ConversationFrame(tk.Frame):
                 self.controller["bg"] = '#00b894'
             return
 
-    # Ask for pause
-    def ask_for_pause(self):
-        # If break isn't already started...
-        # If I'm the one talking...
-        if self.flags["who_talks_flag"] == whoami:
-            if not self.flags["pause_timer_flag"]:
-                # One up pause counter
-                self.flags["pause_counter"] = self.flags["pause_counter"] + 1
-
-                # If flag counter exceeded 2 for you, that means you can't have a break...
-                if self.flags["pause_counter"] > 2:
-                    self.flags["pause_counter"] = self.flags["pause_counter"] - 1
-                    tk.messagebox.showinfo("Blad", "Wykorzystałeś już obie szansy na przerwę")
-                else:
-                    # Check if "breaks" element already exists...
-                    if self.conversation["breaks"] is None:
-                        # If it doesn't exist, assign 0 and increment
-                        self.conversation["breaks"] = 0
-                        self.conversation["breaks"] = self.conversation["breaks"] + 1
-                    else:
-                        # Else just increment
-                        self.conversation["breaks"] = self.conversation["breaks"] + 1
-
-                    # Same for "breaks-taken-by-source"...
-                    if self.conversation["breaks-taken-by-source"] is None:
-                        self.conversation["breaks-taken-by-source"] = 0
-                        self.conversation["breaks-taken-by-source"] = self.conversation["breaks-taken-by-source"] +1
-                    else:
-                        self.conversation["breaks-taken-by-source"] = self.conversation["breaks-taken-by-source"] +1
-
-                    self.flags["pause_timer_flag"] = True
-                    self.stop_conversation_timer()
-
-                    ######################################################
-                    # TODO: Send information to reciever about the pause
-                    # self.conversationHistory["breaks"] + 1
-                    # self.conversationHistory["breaks_taken_by_target"] + 1
-                    ######################################################
-
-                    self.controller["bg"] = '#a29bfe'
-                    self.pause_information_label.configure(text="Wykorzystane przerwy: {}".format(self.flags["pause_counter"]))
-
-                    self.pause_timer.pack(side="bottom")
-                    self.pause_timer.after(1000, self.update_pause_timer, 30)
-            else:
-                tk.messagebox.showinfo("Uwaga", "Pauza aktualnie trwa.")
-        else:
-            tk.messagebox.showinfo("Uwaga", "Nie możesz wykorzystać prawa do pauzy w tym momencie.")
-
-    def end_conversation_properly(self):
-        print("Send signal about ending connection")
-
     def return_to_main_frame(self):
         #if tk.messagebox.askokcancel("Zakończ", "Czy na pewno chcesz zakończyć połączenie?"):
+
+        # TODO: chamsko zamknij sockety
         tk.messagebox.showinfo("Tajniacy - zakończ", "Połączenie zakończone.")
         self.receiver_label.pack_forget()
         self.kill_conversation_timer()
@@ -271,8 +258,8 @@ class ConversationFrame(tk.Frame):
         #
 
         self.flags["who_talks_flag"] = "receiver"
-        self.receiver_label.configure(text=self.controller.shared_data["host_ip"])
-        self.receiver_label.pack(side="top")
+        # self.receiver_label.configure(text=self.controller.shared_data["host_ip"])
+        # self.receiver_label.pack(side="top")
         self.conversation = self.new_conversation()
         self.conversation["status"] = "in progress"
         self.conversation_timer.pack()

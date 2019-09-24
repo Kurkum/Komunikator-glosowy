@@ -35,6 +35,9 @@ class GUI(tk.Tk):
                 "not_accepted_flag": False,
                 "stop_timer_flag": False
             },
+            "conversation_flags": {
+                "not_ended": True
+            },
             "who_called": "",
             "cycle_ender": 0
         }
@@ -84,6 +87,7 @@ class GUI(tk.Tk):
         if tk.messagebox.askokcancel("Zakończ", "Czy na pewno chcesz wyjść z programu?"):
             self.frame_objects_container["ConnectionHandler"].thread_stopper["listener"] = True
             self.frame_objects_container["ConnectionHandler"].thread_stopper["clienter"] = True
+            self.frame_objects_container["ConnectionHandler"].exit_listener()
             self.frame_objects_container["ConnectionHandler"].listener_socket.close()
             self.conversationHistory.saveConversationHistoryToFile()
             self.destroy()

@@ -8,8 +8,7 @@ class ConversationHistory:
 
     def newConversation(self):
         conversation = dict.fromkeys(["id", "source", "target", "duration", "status", "messages-sent",
-                                     "messages-sent-by-source", "messages-sent-by-target", "breaks",
-                                     "breaks-taken-by-source", "breaks-taken-by-target"])
+                                     "messages-sent-by-source", "messages-sent-by-target", ])
         return conversation
 
     def readConversationHistory(self):
@@ -65,10 +64,7 @@ if __name__ == '__main__':
         "status": "ended-properly",
         "messages-sent": 13,
         "messages-sent-by-source": 7,
-        "messages-sent-by-target": 6,
-        "breaks": 0,
-        "breaks-taken-by-source": 0,
-        "breaks-taken-by-target": 0
+        "messages-sent-by-target": 6
     }
     conversationSub = {
         "source": "192.168.0.4",
@@ -77,10 +73,7 @@ if __name__ == '__main__':
         "status": "ended-properly",
         "messages-sent": 13,
         "messages-sent-by-source": 7,
-        "messages-sent-by-target": 6,
-        "breaks": 1,
-        "breaks-taken-by-source": 1,
-        "breaks-taken-by-target": 1
+        "messages-sent-by-target": 6
     }
     convHis.readConversationHistory()
     convHis.addConversation(conversation)
