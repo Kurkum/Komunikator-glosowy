@@ -1,9 +1,9 @@
 import json
-
+import os
 
 class ConversationHistory:
     def __init__(self):
-        with open("../conversation_history.json") as json_file:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "conversation_history.json"), "r") as json_file:
             self.conversationContainer = json.load(json_file)
 
     def newConversation(self):
@@ -37,8 +37,7 @@ class ConversationHistory:
         print(json.dumps(self.conversationContainer, indent=4))
 
     def saveConversationHistoryToFile(self):
-        # TODO: Handle appending to existing conv hist
-        file = open("../conversation_history.json", "w")
+        file = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "/conversation_history.json"), "w")
         file.truncate()
         file.write(self.getJSON())
         file.close()

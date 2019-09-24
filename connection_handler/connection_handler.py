@@ -33,9 +33,6 @@ class ConnectionHandler(tk.Frame):
         self.clienter = threading.Thread(target=self.client_action, args=())
         self.clienter.start()
 
-        # vars
-        # self.listener_socket = None
-        # self.listen_port = None
         self.modulation = None
 
         self.GLOBAL_IP = self.get_local_ip()
@@ -44,6 +41,33 @@ class ConnectionHandler(tk.Frame):
         actual_conversation = self.controller.get_current_conversation()
         actual_conversation["source"] = source
         actual_conversation["target"] = target
+
+    def update_messages_sent(self):
+        actual_conversation = self.controller.get_current_conversation()
+
+        if actual_conversation["messages-sent"] is None:
+            actual_conversation["messages-sent"] = 0
+            actual_conversation["messages-sent"] = actual_conversation["messages-sent"] + 1
+        else:
+            actual_conversation["messages-sent"] = actual_conversation["messages-sent"] + 1
+
+    def update_messages_sent_by_source(self):
+        actual_conversation = self.controller.get_current_conversation()
+
+        if actual_conversation["messages-sent-by-source"] is None:
+            actual_conversation["messages-sent-by-source"] = 0
+            actual_conversation["messages-sent-by-source"] = actual_conversation["messages-sent-by-source"] + 1
+        else:
+            actual_conversation["messages-sent-by-source"] = actual_conversation["messages-sent-by-source"] + 1
+
+    def update_messages_sent_by_target(self):
+        actual_conversation = self.controller.get_current_conversation()
+
+        if actual_conversation["messages-sent-by-target"] is None:
+            actual_conversation["messages-sent-by-target"] = 0
+            actual_conversation["messages-sent-by-target"] = actual_conversation["messages-sent-by-target"] + 1
+        else:
+            actual_conversation["messages-sent-by-target"] = actual_conversation["messages-sent-by-target"] + 1
 
     def modulate_voice(self, data):
         width = 2
@@ -70,7 +94,8 @@ class ConnectionHandler(tk.Frame):
     def listener_action(self):
         proto = socket.getprotobyname('tcp')
         self.listener_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto)
-        self.listen_port = randint(20000, 21000)
+        # self.listen_port = randint(20000, 21000)
+        self.listen_port = 22222
         print("Slucham na porcie {}".format(self.listen_port))
         self.listener_socket.bind((self.get_local_ip(), self.listen_port))
         self.listener_socket.listen(1)
@@ -204,6 +229,8 @@ class ConnectionHandler(tk.Frame):
                                 frames_per_buffer=CHUNK)
 
                 # print("Odbieranie dźwięku")
+                self.update_messages_sent()
+                self.update_messages_sent_by_source()
                 frames = []
                 while 1:
                     data = conn.recv(1024)
@@ -247,6 +274,9 @@ class ConnectionHandler(tk.Frame):
                                         output=True,
                                         frames_per_buffer=CHUNK)
 
+                        self.update_messages_sent()
+                        self.update_messages_sent_by_source()
+
                         # print("Odbieranie dźwięku")
                         frames = []
                         while 1:
@@ -285,6 +315,9 @@ class ConnectionHandler(tk.Frame):
                     # print("Nagrywanie: ")
                     frames = []
 
+                    self.update_messages_sent()
+                    self.update_messages_sent_by_target()
+
                     for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
                         data = stream.read(CHUNK)
                         data = self.modulate_voice(data)
@@ -322,7 +355,8 @@ class ConnectionHandler(tk.Frame):
             if self.is_free() and self.controller.shared_data["host_ip"] != "":
                 self.i_am_busy()
                 adres = self.controller.shared_data["host_ip"]
-                port = self.controller.shared_data["host_port"]
+                # port = self.controller.shared_data["host_port"]
+                port = 22222
                 # print("Łączę z adresem: " + str(adres))
                 try:
                     s.connect((adres, int(port)))
@@ -416,6 +450,10 @@ class ConnectionHandler(tk.Frame):
 
                     # print("Odbieranie dźwięku")
                     frames = []
+
+                    self.update_messages_sent()
+                    self.update_messages_sent_by_target()
+
                     while 1:
                         data = conn.recv(1024)
                         if str(data)[len(str(data)) - 2] == "K" \
@@ -453,6 +491,10 @@ class ConnectionHandler(tk.Frame):
 
                 # print("Nagrywanie: ")
                 frames = []
+
+                self.update_messages_sent()
+                self.update_messages_sent_by_source()
+
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
                     data = stream.read(CHUNK)
                     data = self.modulate_voice(data)
@@ -509,6 +551,9 @@ class ConnectionHandler(tk.Frame):
                         # print("Nagrywanie: ")
                         frames = []
 
+                        self.update_messages_sent()
+                        self.update_messages_sent_by_source()
+
                         for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
                             data = stream.read(CHUNK)
                             data = self.modulate_voice(data)
@@ -543,6 +588,10 @@ class ConnectionHandler(tk.Frame):
 
                     # print("Odbieranie dźwięku")
                     frames = []
+
+                    self.update_messages_sent()
+                    self.update_messages_sent_by_target()
+
                     while 1:
                         data = conn.recv(1024)
                         if str(data)[len(str(data)) - 2] == "K" \
@@ -640,7 +689,7 @@ class ConnectionHandler(tk.Frame):
     def gen_e(self, phi):
         i = 5  # Tu możesz DOWOLNIE ustawić wartość minimalną.
         while 1:
-            if self.czy_pierwsza(i) and self.nwd(phi, i) == 1:  # czy_pierwsza jednak chyba musi być?  ################# Ostatnia zmiana
+            if self.czy_pierwsza(i) and self.nwd(phi, i) == 1:
                 return i
             i = i + 1
 

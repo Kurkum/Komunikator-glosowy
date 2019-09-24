@@ -41,18 +41,21 @@ class IPSearchFrame(tk.Frame):
             ip_search_entry_get = field.get()
             ip_regex_str = "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
             port_regex_str = "^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$"
-            ip, port = ip_search_entry_get.split(":")
+#            ip, port = ip_search_entry_get.split(":")
+            ip = ip_search_entry_get
+
             if not re.search(ip_regex_str, ip):
                 raise ValueError
-            elif not re.search(port_regex_str, port):
-                raise ValueError
+            # elif not re.search(port_regex_str, port):
+            #     raise ValueError
         except ValueError:
-            tk.messagebox.showinfo('Tajniacy - błąd', "Należy podać poprawny adres IP "
-                                            "wraz z portem w formacie: 0.0.0.0:1234")
+            # tk.messagebox.showinfo('Tajniacy - błąd', "Należy podać poprawny adres IP "
+            #                                 "wraz z portem w formacie: 0.0.0.0:1234")
+            tk.messagebox.showinfo('Tajniacy - błąd', "Należy podać poprawny adres IP")
             return
         try:
             self.controller.shared_data["host_ip"] = ip
-            self.controller.shared_data["host_port"] = port
+            # self.controller.shared_data["host_port"] = port
             self.controller.show_frame("WaitingFrame")
         except Exception as ip_search_exception:
             tk.messagebox.showinfo('Tajniacy - błąd', 'Nie znaleziono podanego klienta.')
