@@ -3,7 +3,7 @@ import os
 
 class ConversationHistory:
     def __init__(self):
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "conversation_history.json"), "r") as json_file:
+        with open("conversation_history.json", "r") as json_file:
             self.conversationContainer = json.load(json_file)
 
     def newConversation(self):
@@ -37,13 +37,13 @@ class ConversationHistory:
         print(json.dumps(self.conversationContainer, indent=4))
 
     def saveConversationHistoryToFile(self):
-        file = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "/conversation_history.json"), "w")
+        file = open("conversation_history.json", "w")
         file.truncate()
         file.write(self.getJSON())
         file.close()
 
     def readConversationHistoryFromFile(self):
-        file = open("../conversation_history.json", "r")
+        file = open("conversation_history.json", "r")
         content = file.read()
         file.close()
         return content
